@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,38 +18,25 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-
 import javax.validation.Valid;
 
 @RestController
-public class UserResource {
+public class UserJPAResource {
 
     @Autowired
-    private UserDaoService service;
+    private UserRepository userRepository;
 
-    @GetMapping(path = "/users")
+    @Autowired
+    private PostRepository postRepository;
+
+    @GetMapping(path = "/jpa/users")
     public List<User> retrieveAllUsers() {
-        return service.findAll();
+        return userRepository.findAll();
     }
 
-    @GetMapping(path = "/users-with-filter")
-    public MappingJacksonValue retrieveAllUsersWithFilter() {
-        List<User> users = service.findAll();
-
-        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "birthdate");
-        FilterProvider filters = new SimpleFilterProvider().addFilter("UserFilter", filter);
-        MappingJacksonValue mapping = new MappingJacksonValue(users);
-        mapping.setFilters(filters);
-
-        return mapping;
-    }
-
-    @GetMapping(path = "/users/{id}")
+    @GetMapping(path = "/jpa/users/{id}")
     public EntityModel<User> retrieveUserById(@PathVariable Integer id) {
-        User user = service.findOne(id);
+        User user = userRepository.findById(id).orElse(null);
         if (user == null) {
             throw new UserNotFoundException("id: " + id);
         }
@@ -63,24 +49,9 @@ public class UserResource {
         return model;
     }
 
-    @GetMapping(path = "/users/with-filter/{id}")
-    public MappingJacksonValue retrieveUserByIdWithFilter(@PathVariable Integer id) {
-        User user = service.findOne(id);
-        if (user == null) {
-            throw new UserNotFoundException("id: " + id);
-        }
-
-        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "birthdate");
-        FilterProvider filters = new SimpleFilterProvider().addFilter("UserFilter", filter);
-        MappingJacksonValue mapping = new MappingJacksonValue(user);
-        mapping.setFilters(filters);
-        
-        return mapping;
-    }
-
-    @PostMapping(path = "users")
+    @PostMapping(path = "/jpa/users")
     public ResponseEntity<User> saveUser(@Valid @RequestBody User user) {
-        User savedUser = service.saveUser(user);
+        User savedUser = userRepository.save(user);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -89,11 +60,39 @@ public class UserResource {
         return ResponseEntity.created(location).build();
     }
 
-    @DeleteMapping("/users/{id}")
+    @DeleteMapping("/jpa/users/{id}")
     public void deleteById(@PathVariable int id) {
-        User user = service.deleteById(id);
+        User user = userRepository.findById(id).orElse(null);
         if (user == null) {
             throw new UserNotFoundException("id: " + id);
         }
+        userRepository.delete(user);
+    }
+
+    @GetMapping(path = "/jpa/users/{id}/posts")
+    public List<Post> getUserPostsById(@PathVariable int id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            throw new UserNotFoundException("id: " + id);
+        }
+
+        return user.getPosts();
+    }
+
+    @PostMapping(path = "/jpa/users/{id}/posts")
+    public ResponseEntity<User> saveUser(@PathVariable int id, @Valid @RequestBody Post post) {
+        User foundUser = userRepository.findById(id).orElse(null);
+        if (foundUser == null) {
+            throw new UserNotFoundException("id: " + id);
+        }
+
+        post.setUser(foundUser);
+        postRepository.save(post);
+
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(post.getId())
+                .toUri();
+        return ResponseEntity.created(location).build();
     }
 }
