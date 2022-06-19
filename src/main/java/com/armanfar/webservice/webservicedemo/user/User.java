@@ -5,10 +5,10 @@ import java.util.Date;
 import javax.validation.constraints.Past;
 import javax.validation.constraints.Size;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonFilter;
 
-@JsonIgnoreProperties(value = {"birthdate"})
+// @JsonIgnoreProperties(value = {"birthdate"})
+@JsonFilter("UserFilter")
 public class User {
 
     private Integer id;
@@ -19,7 +19,7 @@ public class User {
     @Past(message = "Birthdate should be in the past")
     private Date birthdate;
 
-    @JsonIgnore
+    // @JsonIgnore
     private String password;
 
     public User(Integer id, String name, Date birthdate, String password) {
