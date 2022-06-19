@@ -11,11 +11,11 @@ public class UserDaoService {
     private static List<User> users = new ArrayList<>();
 
     static {
-        users.add(new User(10, "Ramin", new Date()));
-        users.add(new User(20, "Roya", new Date()));
-        users.add(new User(30, "Laya", new Date()));
-        users.add(new User(40, "Amin", new Date()));
-        users.add(new User(50, "Armin", new Date()));
+        users.add(new User(10, "Ramin", new Date(), "123"));
+        users.add(new User(20, "Roya", new Date(), "345"));
+        users.add(new User(30, "Laya", new Date(), "aa123"));
+        users.add(new User(40, "Amin", new Date(), "bb345"));
+        users.add(new User(50, "Armin", new Date(), "abc"));
     }
 
     public List<User> findAll() {
